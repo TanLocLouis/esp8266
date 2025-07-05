@@ -9,13 +9,14 @@ DATA_DIR = "data"
 os.makedirs(DATA_DIR, exist_ok=True)
 today = datetime.now().strftime("%m-%d-%Y")
 filename = os.path.join(DATA_DIR, f"{today}.txt")
-timestamp = datetime.now().strftime("[%H:%M:%S]")
 
 # Exact working command from manual test
 cmd = f'curl --silent --http1.0 --no-keepalive --max-time 5 "{URL}"'
 
 # Retry logic
 while True:
+    timestamp = datetime.now().strftime("[%H:%M:%S]")
+    
     try:
         result = subprocess.run(
             cmd,
@@ -40,4 +41,4 @@ while True:
         with open(filename, "a") as f:
             f.write(f"{timestamp} {e.stdout.strip()}\n")
 
-        time.sleep(20)
+    time.sleep(20)
