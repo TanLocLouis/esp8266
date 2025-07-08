@@ -65,8 +65,8 @@
 // #include <ESP8266WiFi.h>      // Use <WiFi.h> if using ESP32
 // #include <Servo.h>
 
-// const char* ssid = "your_wifi_name";
-// const char* password = "your_wifi_password";
+// const char* ssid = "Xiaomi_BE60";
+// const char* password = "phong5032";
 
 // WiFiServer server(80);
 // Servo myservo;
@@ -112,8 +112,8 @@
 // #include <ESP8266WiFi.h>      // Use <WiFi.h> if using ESP32
 // #include <Servo.h>
 
-// const char* ssid = "your_wifi_name";
-// const char* password = "your_wifi_password";
+// const char* ssid = "Xiaomi_BE60";
+// const char* password = "phong5032";
 
 // WiFiServer server(80);
 // Servo myservo;
@@ -210,8 +210,8 @@
 // #define RELAY_PIN 2
 
 // // Wifi
-// const char* ssid = "your_wifi_name";
-// const char* password = "your_wifi_password";
+// const char* ssid = "Xiaomi_BE60";
+// const char* password = "phong5032";
 // WiFiServer server(80);
 
 // void setup() {
@@ -301,19 +301,24 @@
 #define DHTPIN 5       // GPIO5 = D1 on NodeMCU
 #define DHTTYPE DHT11
 DHT dht(DHTPIN, DHTTYPE);
+// Global vars for sensor data
+float temperature = NAN;
+float humidity = NAN;
+
+// Servo
+Servo myservo;
+#define SERVO_PIN 2  // GPIO2 = D4 on NodeMCU
 
 // Relay
 #define RELAY_PIN 15    // GPIO15 = D4
 
 // WiFi
-const char* ssid = "your_wifi_name";
+const char* ssid = "your_wifi_ssid";
 const char* password = "your_wifi_password";
-
 WiFiServer server(80);
 
-// Global vars for sensor data
-float temperature = NAN;
-float humidity = NAN;
+// GPIO13 check OPTO is closed?
+#define OPTO_PIN 13     // GPIO13 = D8
 
 void setup() {
   // Set time for ESP8266 to fully booted
@@ -321,12 +326,19 @@ void setup() {
 
   Serial.begin(115200);
 
+  // Servo
+  myservo.attach(SERVO_PIN);
+  myservo.write(90);  // Start at center
+
   // Setup DHT11
   dht.begin();
 
   // Setup relay
   pinMode(RELAY_PIN, OUTPUT);
   digitalWrite(RELAY_PIN, LOW);     // Start with relay OFF
+
+  // Enable internal pull-up resistor for GPIO 16
+  pinMode(OPTO_PIN, INPUT_PULLUP);
 
   // Setup WiFi
   WiFi.begin(ssid, password);
@@ -349,6 +361,17 @@ void readDHT11() {
     Serial.printf("DHT: %.1f°C, %.1f%%\n", temperature, humidity);
   } else {
     Serial.println("❌ Failed to read DHT11");
+  }
+}
+
+bool is_OCTO_Closed() {
+  int state = digitalRead(OPTO_PIN);
+  if (state == LOW) {
+    Serial.println("Circuit is CLOSED (Optocoupler conducting)");
+    return true;
+  } else {
+    Serial.println("Circuit is OPEN (Optocoupler not conducting)");
+    return false;
   }
 }
 
@@ -383,24 +406,62 @@ void handleClient() {
     client.println("Content-Type: text/plain");
     client.println(); client.println("Relay held ON for 10 seconds.");
 
+  // Read data from DHT11 and create API
   } else if (request.indexOf("/weather") != -1) {
     // Read fresh DHT values before serving
     readDHT11();
 
-    // Serve JSON response
+    // Create JSON payload
+    String json = "{";
+    json += "\"temperature\":";
+    json += isnan(temperature) ? "null" : String(temperature, 1);
+    json += ",\"humidity\":";
+    json += isnan(humidity) ? "null" : String(humidity, 1);
+    json += "}";
+
+    // Send HTTP response with correct headers
     client.println("HTTP/1.1 200 OK");
     client.println("Content-Type: application/json");
     client.println("Access-Control-Allow-Origin: *");
-    client.println();
+    client.print("Content-Length: ");
+    client.println(json.length());
+    client.println("Connection: close");  // Make sure to close
+    client.println();  // End of headers
 
-    client.print("{\"temperature\":");
-    client.print(isnan(temperature) ? "null" : String(temperature, 1));
-    client.print(",\"humidity\":");
-    client.print(isnan(humidity) ? "null" : String(humidity, 1));
-    client.println("}");
+    client.print(json);
+    client.flush();
 
+  // Check whether GPIO16 is closed
+  } else if (request.indexOf("/ispoweron") != -1) {
+    int status = is_OCTO_Closed() == true ? 1 : 0;
+
+    // Create JSON payload
+    String json = "{";
+    json += "\"status\":";
+    json += String(status);
+    json += "}";
+
+    // Send HTTP response with correct headers
+    client.println("HTTP/1.1 200 OK");
+    client.println("Content-Type: application/json");
+    client.println("Access-Control-Allow-Origin: *");
+    client.print("Content-Length: ");
+    client.println(json.length());
+    client.println("Connection: close");  // Make sure to close
+    client.println();  // End of headers
+
+    client.print(json);
+    client.flush();
+  // Control Servo
+  } else if (request.indexOf("/hit") != -1) {
+    Serial.println("Moving to 0°");
+    myservo.write(0);   // Move to 0°
+    delay(1000);
+    Serial.println("Moving to 180°");
+    myservo.write(180);   // Move to 0°
+
+  // Unknown request
   } else {
-    // Unknown request
     client.println("HTTP/1.1 404 Not Found");
     client.println("Content-Type: text/plain");
     client.println(); client.println("Not Found");
@@ -424,8 +485,8 @@ void loop() {
 // DHT dht(DHTPIN, DHTTYPE);
 
 // // WiFi credentials
-// const char* ssid = "your_wifi_name";
-// const char* password = "your_wifi_password";
+// const char* ssid = "Xiaomi_BE60";
+// const char* password = "phong5032";
 
 // WiFiServer server(80);
 

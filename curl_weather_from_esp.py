@@ -31,7 +31,6 @@ while True:
             f.write(f"{timestamp} {result.stdout.strip()}\n")
 
         print(f"✅ Weather data saved to {filename}")
-        break
 
     except subprocess.CalledProcessError as e:
         print("stdout:", e.stdout.strip())
