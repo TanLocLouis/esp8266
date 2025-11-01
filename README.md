@@ -10,7 +10,7 @@ A comprehensive ESP8266-based project that combines remote computer control, env
 - 📊 **RESTful API** - Simple HTTP API for all functions
 - 🔍 **Power State Detection** - Check if computer is on using optocoupler
 - 📝 **Data Logging** - Python scripts for automated data collection
-- 🎙️ **Voice Control** - Optional voice-activated servo control
+- 🎙️ **Voice Control** - Optional voice-activated control (requires customization)
 
 ## 🛠️ Hardware Requirements
 
@@ -179,11 +179,14 @@ data/01-15-2025.txt
 
 ### Voice-Controlled Servo (`esp.py`)
 
-Control the servo using voice commands (experimental).
+Experimental Python script for voice-controlled automation.
+
+**⚠️ Important:** This script requires modification before use. The trigger words in the script need to be updated to appropriate commands.
 
 **Configuration:**
 ```python
 ESP_IP = "http://192.168.1.2"  # Update with your ESP IP
+# Update TRIGGER_WORDS dictionary with appropriate voice commands
 ```
 
 **Usage:**
@@ -191,11 +194,15 @@ ESP_IP = "http://192.168.1.2"  # Update with your ESP IP
 python esp.py
 ```
 
-**Voice Commands:**
-- Say "open" to trigger the servo
-- Say "close" to return servo to position
+**How it works:**
+- Listens for voice commands via microphone
+- Triggers specified actions when keywords are detected
+- Automatically cycles servo after activation
 
-**Note:** Requires a microphone and internet connection for Google Speech Recognition.
+**Note:** 
+- Requires a microphone and internet connection for Google Speech Recognition
+- The script needs to be customized with appropriate trigger words
+- Requires modification to match the ESP8266 API endpoints (`/hit` instead of `/open` and `/close`)
 
 ## 📋 Usage Examples
 
